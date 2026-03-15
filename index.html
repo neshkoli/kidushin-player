@@ -368,7 +368,7 @@
       activeEl.classList.add('active');
       activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
 
-      audio.src = encodeURIComponent(tracks[index]);
+      audio.src = 'audio/' + encodeURIComponent(tracks[index]);
       trackTitle.textContent = trackNames[index];
       progressFill.style.width = '0%';
       timeCurrent.textContent = '0:00';
