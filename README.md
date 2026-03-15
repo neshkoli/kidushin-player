@@ -40,6 +40,6 @@ tracks.json     — מקור האמת לסדר ולקיבוץ הרצועות
 
 ---
 
-© אפרים שרם וחננאל תורגמן · shremim@gmail.com · hananelt@gmail.com
+© הרב אפרים שרם והרב חננאל תורגמן · shremim@gmail.com · hananelt@gmail.com
 
 כל הזכויות שמורות להקלטות השמע.
