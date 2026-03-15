@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Audio Player</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #0f0f1a;
+      color: #e0e0f0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 40px;
+    }
+
+    h1 {
+      font-size: 1.2rem;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      color: #a78bfa;
+      margin-bottom: 24px;
+      text-align: center;
+    }
+
+    /* ── Player Card ── */
+    .player-card {
+      background: linear-gradient(135deg, #1e1b3a 0%, #16213e 100%);
+      border: 1px solid #2d2b55;
+      border-radius: 20px;
+      padding: 28px 24px 24px;
+      width: 100%;
+      max-width: 480px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+      margin-bottom: 28px;
+    }
+
+    .now-playing-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #7c6fc4;
+      margin-bottom: 8px;
+    }
+
+    .track-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #e0e0f0;
+      min-height: 1.5em;
+      margin-bottom: 20px;
+      line-height: 1.4;
+    }
+
+    /* ── Progress ── */
+    .progress-wrap {
+      margin-bottom: 6px;
+    }
+
+    .progress-bar-bg {
+      width: 100%;
+      height: 5px;
+      background: #2d2b55;
+      border-radius: 99px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #7c6fc4, #a78bfa);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.2s linear;
+      pointer-events: none;
+    }
+
+    .progress-times {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.72rem;
+      color: #7c6fc4;
+      margin-top: 6px;
+      margin-bottom: 20px;
+    }
+
+    /* ── Controls ── */
+    .controls {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .ctrl-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: #a78bfa;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: color 0.2s, transform 0.1s;
+      padding: 6px;
+    }
+
+    .ctrl-btn:hover { color: #c4b5fd; transform: scale(1.1); }
+    .ctrl-btn:active { transform: scale(0.95); }
+
+    .ctrl-btn svg { display: block; }
+
+    .play-btn {
+      background: linear-gradient(135deg, #7c6fc4, #a78bfa);
+      color: #fff;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      box-shadow: 0 4px 20px rgba(167,139,250,0.35);
+    }
+
+    .play-btn:hover { color: #fff; background: linear-gradient(135deg, #9d8fe0, #c4b5fd); }
+
+    /* ── Track List ── */
+    .track-list {
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .track-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 13px 16px;
+      background: #1a1730;
+      border: 1px solid #2d2b55;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+      user-select: none;
+    }
+
+    .track-item:hover {
+      background: #221f40;
+      border-color: #4c3f8a;
+    }
+
+    .track-item.active {
+      background: linear-gradient(135deg, #2a2250, #1e1b3a);
+      border-color: #7c6fc4;
+    }
+
+    .track-num {
+      font-size: 0.78rem;
+      color: #7c6fc4;
+      min-width: 22px;
+      text-align: center;
+    }
+
+    .track-item.active .track-num {
+      color: #a78bfa;
+    }
+
+    .track-name {
+      flex: 1;
+      font-size: 0.92rem;
+      color: #c8c0e8;
+      line-height: 1.4;
+    }
+
+    .track-item.active .track-name {
+      color: #e0d9ff;
+      font-weight: 600;
+    }
+
+    .playing-indicator {
+      display: none;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .track-item.active.playing .playing-indicator {
+      display: flex;
+    }
+
+    .playing-indicator span {
+      display: inline-block;
+      width: 3px;
+      background: #a78bfa;
+      border-radius: 2px;
+      animation: bounce 0.8s ease-in-out infinite;
+    }
+
+    .playing-indicator span:nth-child(1) { height: 10px; animation-delay: 0s; }
+    .playing-indicator span:nth-child(2) { height: 16px; animation-delay: 0.15s; }
+    .playing-indicator span:nth-child(3) { height: 8px; animation-delay: 0.3s; }
+
+    @keyframes bounce {
+      0%, 100% { transform: scaleY(0.5); }
+      50% { transform: scaleY(1); }
+    }
+
+    audio { display: none; }
+  </style>
+</head>
+<body>
+
+  <h1>🎵 Audio Player</h1>
+
+  <div class="player-card">
+    <div class="now-playing-label">Now Playing</div>
+    <div class="track-title" id="trackTitle">Select a track to begin</div>
+
+    <div class="progress-wrap">
+      <div class="progress-bar-bg" id="progressBg">
+        <div class="progress-bar-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-times">
+        <span id="timeCurrent">0:00</span>
+        <span id="timeDuration">0:00</span>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn" id="btnPrev" title="Previous">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/>
+        </svg>
+      </button>
+
+      <button class="ctrl-btn play-btn" id="btnPlay" title="Play / Pause">
+        <svg id="iconPlay" width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M8 5v14l11-7z"/>
+        </svg>
+        <svg id="iconPause" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display:none">
+          <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+        </svg>
+      </button>
+
+      <button class="ctrl-btn" id="btnNext" title="Next">
+        <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 18l8.5-6L6 6v12zm2-8.14 5.02 2.14L8 14.14V9.86zM16 6h2v12h-2z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="track-list" id="trackList"></div>
+
+  <audio id="audioEl"></audio>
+
+  <script>
+    const tracks = [
+      "סימן כו אבן העזר.mp3",
+      "סימן כז אבן העזר.mp3",
+      "סימן כט אבן העזר.mp3",
+      "סימן לג חושן משפט - עדים קרובים.mp3",
+      "סימן לד אבן העזר.mp3",
+      "סימן לד חושן משפט פסולי העדים.mp3",
+      "סימן מב אבן העזר.mp3",
+      "סימן מב חושן משפט.mp3",
+      "סימן מד חושן משפט.mp3",
+      "סימן מט חושן משפט.mp3",
+      "סימן סא אבן העזר - חופת נידה.mp3",
+      "סימן סב אבן העזר - ברכת חתנים.mp3",
+      "סימן סג אהן העזר - כלה הנכנסת לחופה.mp3",
+      "סימן סד אבן העזר - זמן ימי השמחה.mp3",
+      "סימן סה אבן העזר - שמחת חתן וכלה.mp3",
+      "סימן סו אבן העזר.mp3",
+      "סימן קכו אבן העזר.mp3"
+    ];
+
+    const audio = document.getElementById('audioEl');
+    const trackTitle = document.getElementById('trackTitle');
+    const progressFill = document.getElementById('progressFill');
+    const progressBg = document.getElementById('progressBg');
+    const timeCurrent = document.getElementById('timeCurrent');
+    const timeDuration = document.getElementById('timeDuration');
+    const btnPlay = document.getElementById('btnPlay');
+    const iconPlay = document.getElementById('iconPlay');
+    const iconPause = document.getElementById('iconPause');
+    const trackList = document.getElementById('trackList');
+
+    let currentIndex = -1;
+    let isPlaying = false;
+
+    function fmt(s) {
+      if (isNaN(s)) return '0:00';
+      const m = Math.floor(s / 60);
+      const sec = Math.floor(s % 60).toString().padStart(2, '0');
+      return `${m}:${sec}`;
+    }
+
+    function displayName(filename) {
+      return filename.replace(/\.mp3$/i, '');
+    }
+
+    // Build track list
+    tracks.forEach((file, i) => {
+      const item = document.createElement('div');
+      item.className = 'track-item';
+      item.dataset.index = i;
+      item.innerHTML = `
+        <span class="track-num">${i + 1}</span>
+        <span class="track-name">${displayName(file)}</span>
+        <span class="playing-indicator">
+          <span></span><span></span><span></span>
+        </span>`;
+      item.addEventListener('click', () => loadTrack(i, true));
+      trackList.appendChild(item);
+    });
+
+    function getItems() {
+      return document.querySelectorAll('.track-item');
+    }
+
+    function loadTrack(index, autoPlay = false) {
+      if (index < 0 || index >= tracks.length) return;
+
+      // Update active item
+      getItems().forEach(el => el.classList.remove('active', 'playing'));
+      currentIndex = index;
+      const activeEl = getItems()[index];
+      activeEl.classList.add('active');
+
+      // Scroll into view smoothly
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+      const file = tracks[index];
+      audio.src = encodeURIComponent(file);
+      trackTitle.textContent = displayName(file);
+      progressFill.style.width = '0%';
+      timeCurrent.textContent = '0:00';
+      timeDuration.textContent = '0:00';
+
+      if (autoPlay) {
+        audio.play().then(() => setPlaying(true)).catch(() => setPlaying(false));
+      } else {
+        setPlaying(false);
+      }
+    }
+
+    function setPlaying(state) {
+      isPlaying = state;
+      iconPlay.style.display = state ? 'none' : 'block';
+      iconPause.style.display = state ? 'block' : 'none';
+
+      getItems().forEach((el, i) => {
+        if (i === currentIndex && state) el.classList.add('playing');
+        else el.classList.remove('playing');
+      });
+    }
+
+    btnPlay.addEventListener('click', () => {
+      if (currentIndex === -1) { loadTrack(0, true); return; }
+      if (isPlaying) {
+        audio.pause();
+        setPlaying(false);
+      } else {
+        audio.play().then(() => setPlaying(true));
+      }
+    });
+
+    document.getElementById('btnPrev').addEventListener('click', () => {
+      if (currentIndex <= 0) loadTrack(tracks.length - 1, isPlaying);
+      else loadTrack(currentIndex - 1, isPlaying);
+    });
+
+    document.getElementById('btnNext').addEventListener('click', () => {
+      if (currentIndex >= tracks.length - 1) loadTrack(0, isPlaying);
+      else loadTrack(currentIndex + 1, isPlaying);
+    });
+
+    // Auto-advance
+    audio.addEventListener('ended', () => {
+      if (currentIndex < tracks.length - 1) loadTrack(currentIndex + 1, true);
+      else { loadTrack(0, false); }
+    });
+
+    // Progress bar update
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const pct = (audio.currentTime / audio.duration) * 100;
+      progressFill.style.width = pct + '%';
+      timeCurrent.textContent = fmt(audio.currentTime);
+    });
+
+    audio.addEventListener('loadedmetadata', () => {
+      timeDuration.textContent = fmt(audio.duration);
+    });
+
+    // Seek on click
+    progressBg.addEventListener('click', (e) => {
+      if (!audio.duration) return;
+      const rect = progressBg.getBoundingClientRect();
+      const ratio = (e.clientX - rect.left) / rect.width;
+      audio.currentTime = ratio * audio.duration;
+    });
+  </script>
+</body>
+</html>
